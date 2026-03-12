@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Tic Tac Toe — Custom Logo & Music</title>
+<style>
+  :root{
+    --bg1:#0f1724; --bg2:#1b2233; --card:linear-gradient(180deg,#11151f,#171a26);
+    --accent:#7c5cff; --muted:#98a0b3;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;background:
+    radial-gradient(1200px 600px at 10% 10%, rgba(124,92,255,0.08), transparent),
+    radial-gradient(900px 400px at 90% 90%, rgba(0,212,166,0.03), transparent),
+    linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6eef8}
+  .stage{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+  .card{width:100%;max-width:560px;background:var(--card);border-radius:14px;padding:18px;
+    box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.02)}
+  header{display:flex;align-items:center;gap:12px;margin-bottom:8px}
+  .logo-wrap{width:56px;height:56px;border-radius:10px;background:linear-gradient(135deg,var(--accent),#4b7bff);
+    display:flex;align-items:center;justify-content:center;font-weight:700;overflow:hidden;flex-shrink:0}
+  .logo-wrap img{width:100%;height:100%;object-fit:cover;display:block}
+  .title h1{margin:0;font-size:18px} .title p{margin:4px 0 0;color:var(--muted);font-size:13px}
+  .top-row{display:flex;align-items:center;gap:12px}
+  .scoreboard{display:flex;gap:10px;align-items:center;font-size:14px}
+  .score{background:rgba(255,255,255,0.02);padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+  .player-dot{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:8px}
+  .player-x .player-dot{background:linear-gradient(180deg,#ff7a7a,#ff4757)}
+  .player-o .player-dot{background:linear-gradient(180deg,#7c5cff,#4b7bff)}
+  .controls{margin-left:auto;display:flex;gap:8px;align-items:center}
+  button.btn{background:linear-gradient(90deg,var(--accent),#4b7bff);border:none;color:#fff;padding:8px 12px;border-radius:10px;cursor:pointer}
+  button.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted);padding:8px 10px;border-radius:10px;cursor:pointer}
+  .turn{display:flex;align-items:center;gap:10px;margin-top:12px;font-weight:700}
+  .bubble{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff}
+  .turn-x .bubble{background:linear-gradient(180deg,#ff7a7a,#ff4757)}
+  .turn-o .bubble{background:linear-gradient(180deg,#7c5cff,#4b7bff)}
+  .board-wrap{display:flex;justify-content:center;padding:18px}
+  .board{width:360px;height:360px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;position:relative}
+  .cell{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));border-radius:12px;
+    display:flex;align-items:center;justify-content:center;font-size:56px;cursor:pointer;transition:transform .15s;box-shadow:0 8px 18px rgba(3,6,20,0.5);
+    user-select:none;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.02);color:transparent}
+  .cell:hover{transform:translateY(-6px) scale(1.02)}
+  .mark{transition:transform .28s,opacity .18s;opacity:0;display:flex;align-items:center;justify-content:center;width:100%;height:100%}
+  .mark.x{color:#ffbcc2;filter:drop-shadow(0 6px 18px rgba(255,71,87,0.15));font-weight:800}
+  .mark.o{color:#dfe1ff;filter:drop-shadow(0 6px 18px rgba(76,59,255,0.12));font-weight:700}
+  .cell.show .mark{opacity:1;transform:scale(1)}
+  .cell.show.pop .mark{transform:scale(1.08) rotate(-6deg)}
+  .strike{position:absolute;height:8px;background:linear-gradient(90deg,#ff6b6b,#ff4757 40%,#7c5cff 100%);left:0;top:0;
+    transform-origin:center;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.6);opacity:0;pointer-events:none;z-index:3}
+  canvas.confetti{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:4}
+  .footer{display:flex;justify-content:space-between;align-items:center;margin-top:8px;color:var(--muted);font-size:13px}
+  .small{font-size:12px;color:var(--muted)}
+  @media(max-width:760px){.board{width:320px;height:320px}}
+</style>
+</head>
+<body>
+<div class="stage" aria-live="polite">
+  <div class="card" role="main" aria-label="Tic Tac Toe">
+    <header>
+      <div class="logo-wrap" id="logoWrap" title="Game logo">
+        <img id="logoImg" alt="logo" style="display:none" />
+        <div id="logoFallback" style="color:white;font-weight:800;font-size:18px;display:flex;align-items:center;justify-content:center;width:100%;height:100%;">TTT</div>
+      </div>
+
+      <div class="title">
+        <h1>Tic Tac Toe</h1>
+      </div>
+
+      <!-- <div style="margin-left:auto;color:var(--muted);font-size:13px">Put <strong>logo.png</strong> and <strong>bg.mp3</strong> in same folder</div> -->
+    </header>
+
+    <div class="top-row" style="align-items:center;">
+      <div class="scoreboard" aria-hidden="false">
+        <div class="score player-x"><span class="player-dot"></span><strong>Player X:</strong> <span id="scoreX" style="margin-left:8px">0</span></div>
+        <div class="score player-o"><span class="player-dot"></span><strong>Player O:</strong> <span id="scoreO" style="margin-left:8px">0</span></div>
+      </div>
+
+      <div class="controls" role="group" aria-label="controls">
+        <button id="musicToggle" class="ghost" title="Toggle background music">🎵 Music</button>
+        <button id="sfxToggle" class="ghost" title="Toggle sound effects">🔊 SFX</button>
+        <button id="restart" class="ghost" title="Restart round">⟲ Round</button>
+        <button id="resetAll" class="ghost" title="Reset scores">♻ Reset</button>
+      </div>
+    </div>
+
+    <div class="turn turn-x" id="turnBox">
+      <div class="bubble" id="turnBubble">X</div>
+      <div id="statusText">Player X's turn</div>
+    </div>
+
+    <div class="board-wrap">
+      <div class="board" id="board" aria-label="tic tac toe board" role="grid">
+        <div class="strike" id="strike" aria-hidden="true"></div>
+        <canvas class="confetti" id="confettiCanvas" width="360" height="360" aria-hidden="true"></canvas>
+      </div>
+    </div>
+
+    <!-- audio element: if you place a file named bg.mp3 (or bg.ogg/bg.wav) it will be used -->
+    <audio id="bgAudio" loop crossorigin="anonymous"></audio>
+  </div>
+</div>
+
+<script>
+/* ---------------------------
+  References + state
+----------------------------*/
+const boardEl = document.getElementById('board');
+const statusText = document.getElementById('statusText');
+const scoreXEl = document.getElementById('scoreX');
+const scoreOEl = document.getElementById('scoreO');
+const strikeEl = document.getElementById('strike');
+const confettiCanvas = document.getElementById('confettiCanvas');
+const turnBox = document.getElementById('turnBox');
+const turnBubble = document.getElementById('turnBubble');
+
+const musicToggle = document.getElementById('musicToggle');
+const sfxToggle = document.getElementById('sfxToggle');
+const restartBtn = document.getElementById('restart');
+const resetBtn = document.getElementById('resetAll');
+
+const logoImg = document.getElementById('logoImg');
+const logoFallback = document.getElementById('logoFallback');
+const bgAudio = document.getElementById('bgAudio');
+
+let board = ["","","","","","","","",""];
+let currentPlayer = "X";
+let gameActive = true;
+let scoreX = 0, scoreO = 0;
+let musicOn = false;
+let sfxOn = true;
+const AUTO_RESTART_DELAY = 1400;
+let pendingRestartTimeout = null;
+
+/* win patterns */
+const winPatterns = [
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
+];
+
+/* ---------------------------
+  WebAudio for SFX (programmatic)
+----------------------------*/
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let audioEnabled = false; // will be set on first user gesture
+
+function ensureAudio(){
+  if(!audioCtx) audioCtx = new AudioContext();
+  if(audioCtx.state === 'suspended' && audioEnabled) audioCtx.resume();
+}
+function playTone(freq, type='sine', dur=0.14, gain=0.08){
+  if(!sfxOn) return;
+  ensureAudio();
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = type; o.frequency.value = freq;
+  g.gain.value = 0.0001;
+  o.connect(g); g.connect(audioCtx.destination);
+  const now = audioCtx.currentTime;
+  g.gain.linearRampToValueAtTime(gain, now + 0.01);
+  o.start(now);
+  g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+  o.stop(now + dur + 0.02);
+}
+function playPlace(){ playTone(currentPlayer==='X'?220:330,'triangle',0.08,0.06) }
+function playWinMelody(){
+  if(!sfxOn) return;
+  ensureAudio();
+  playTone(880,'sine',0.10,0.10);
+  setTimeout(()=>playTone(1100,'sine',0.10,0.10),120);
+  setTimeout(()=>playTone(1320,'sine',0.14,0.12),260);
+}
+function playDraw(){ playTone(160,'sawtooth',0.22,0.12) }
+function playErr(){ playTone(140,'sine',0.12,0.06) }
+
+/* resume audio on first user gesture so audio can start */
+function enableAudioOnGesture(){
+  if(audioEnabled) return;
+  audioEnabled = true;
+  if(!audioCtx) audioCtx = new AudioContext();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  document.removeEventListener('pointerdown', enableAudioOnGesture);
+}
+document.addEventListener('pointerdown', enableAudioOnGesture, { once:true });
+
+/* ---------------------------
+  Board creation & rendering
+----------------------------*/
+function createBoard(){
+  boardEl.querySelectorAll('.cell').forEach(n=>n.remove());
+  for(let i=0;i<9;i++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.dataset.index = i;
+    cell.setAttribute('role','button');
+    cell.setAttribute('aria-label', `Cell ${i+1}`);
+    cell.tabIndex = 0;
+    const mark = document.createElement('div');
+    mark.className = 'mark';
+    mark.innerHTML = '<span class="mark-char"></span>';
+    cell.appendChild(mark);
+    cell.addEventListener('click', handleClick);
+    cell.addEventListener('keydown', ev => { if(ev.key==='Enter' || ev.key===' '){ ev.preventDefault(); handleClick({target:cell}); }});
+    boardEl.appendChild(cell);
+  }
+  resizeConfetti();
+  updateBoardView();
+}
+
+function updateBoardView(){
+  boardEl.querySelectorAll('.cell').forEach(cell=>{
+    const idx = Number(cell.dataset.index);
+    const mark = cell.querySelector('.mark');
+    const char = mark.querySelector('.mark-char');
+    const val = board[idx];
+    if(val){
+      cell.classList.add('show','pop');
+      char.textContent = val;
+      mark.classList.toggle('x', val==='X');
+      mark.classList.toggle('o', val==='O');
+      setTimeout(()=>cell.classList.remove('pop'),420);
+    } else {
+      cell.classList.remove('show','pop');
+      char.textContent = '';
+      mark.classList.remove('x','o');
+    }
+  });
+}
+
+/* ---------------------------
+  Game logic
+----------------------------*/
+function handleClick(e){
+  if(!gameActive) return;
+  const target = e.target.closest('.cell');
+  if(!target) return;
+  const idx = Number(target.dataset.index);
+  if(board[idx] !== ""){ playErr(); return; }
+  board[idx] = currentPlayer;
+  playPlace();
+  updateBoardView();
+  checkWinner();
+}
+
+function clearPendingRestart(){ if(pendingRestartTimeout){ clearTimeout(pendingRestartTimeout); pendingRestartTimeout = null; } }
+function scheduleAutoRestart(){ clearPendingRestart(); pendingRestartTimeout = setTimeout(()=>{ pendingRestartTimeout = null; restartRound(); }, AUTO_RESTART_DELAY); }
+
+function checkWinner(){
+  for(let i=0;i<winPatterns.length;i++){
+    const [a,b,c] = winPatterns[i];
+    if(board[a] && board[a]===board[b] && board[a]===board[c]){
+      gameActive = false;
+      statusText.textContent = `Player ${currentPlayer} Wins!`;
+      if(currentPlayer==='X'){ scoreX++; scoreXEl.textContent = scoreX; } else { scoreO++; scoreOEl.textContent = scoreO; }
+      showStrike(a,c);
+      triggerConfetti();
+      playWinMelody();
+      updateTurnIndicator();
+      scheduleAutoRestart();
+      return;
+    }
+  }
+  if(!board.includes("")){
+    gameActive = false;
+    statusText.textContent = 'Draw!';
+    playDraw();
+    updateTurnIndicator();
+    scheduleAutoRestart();
+    return;
+  }
+  currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+  statusText.textContent = `Player ${currentPlayer}'s turn`;
+  playTone(480,'sine',0.06,0.04);
+  updateTurnIndicator();
+}
+
+/* ---------------------------
+  Strike animation
+----------------------------*/
+function showStrike(indexA, indexC){
+  const cellA = boardEl.querySelector(`.cell[data-index="${indexA}"]`);
+  const cellC = boardEl.querySelector(`.cell[data-index="${indexC}"]`);
+  if(!cellA || !cellC) return;
+  const rect = boardEl.getBoundingClientRect();
+  const ra = cellA.getBoundingClientRect();
+  const rc = cellC.getBoundingClientRect();
+  const ax = ra.left + ra.width/2 - rect.left;
+  const ay = ra.top + ra.height/2 - rect.top;
+  const cx = rc.left + rc.width/2 - rect.left;
+  const cy = rc.top + rc.height/2 - rect.top;
+  const mx = (ax + cx)/2, my = (ay + cy)/2;
+  const angle = Math.atan2(cy - ay, cx - ax) * 180 / Math.PI;
+  const length = Math.hypot(cx - ax, cy - ay);
+  strikeEl.style.width = Math.max(8, length) + 'px';
+  strikeEl.style.left = (mx - length/2) + 'px';
+  strikeEl.style.top = (my - 4) + 'px';
+  strikeEl.style.transform = `rotate(${angle}deg) scaleX(0.02)`;
+  strikeEl.style.opacity = '1';
+  strikeEl.style.transition = 'transform 420ms cubic-bezier(.2,.9,.3,1), opacity 360ms ease';
+  requestAnimationFrame(()=>{ strikeEl.style.transform = `rotate(${angle}deg) scaleX(1)`; });
+  setTimeout(()=>{ strikeEl.style.transition = 'opacity 480ms ease, transform 480ms ease'; strikeEl.style.opacity = '0'; strikeEl.style.transform += ' scale(1.02)'; }, 1200);
+}
+
+/* ---------------------------
+  Restart / reset
+----------------------------*/
+function restartRound(){
+  clearPendingRestart();
+  board = ["","","","","","","","",""];
+  currentPlayer = "X";
+  gameActive = true;
+  statusText.textContent = `Player ${currentPlayer}'s turn`;
+  strikeEl.style.opacity = 0;
+  updateBoardView();
+  updateTurnIndicator();
+}
+function resetAll(){
+  clearPendingRestart();
+  restartRound();
+  scoreX = 0; scoreO = 0;
+  scoreXEl.textContent = '0'; scoreOEl.textContent = '0';
+}
+
+/* ---------------------------
+  Turn indicator
+----------------------------*/
+function updateTurnIndicator(){
+  turnBubble.textContent = currentPlayer;
+  if(currentPlayer === 'X'){ turnBox.classList.remove('turn-o'); turnBox.classList.add('turn-x'); }
+  else{ turnBox.classList.remove('turn-x'); turnBox.classList.add('turn-o'); }
+}
+
+/* ---------------------------
+  Controls wiring
+----------------------------*/
+restartBtn.addEventListener('click', ()=>{ clearPendingRestart(); restartRound(); });
+resetBtn.addEventListener('click', ()=>{ resetAll(); });
+sfxToggle.addEventListener('click', ()=>{
+  sfxOn = !sfxOn;
+  sfxToggle.textContent = sfxOn ? '🔊 SFX' : '🔇 SFX';
+});
+
+/* ---------------------------
+  Background audio loader (attempts common filenames)
+  Put audio file in same folder as this HTML named bg.mp3 (preferred),
+  or bg.ogg / bg.wav. If none found, fallback arpeggio runs.
+----------------------------*/
+const possibleAudioFiles = ['bg.mp3','bg.ogg','bg.wav'];
+function tryLoadFirstAudio(list, onSuccess, onFail){
+  if(!list.length){ onFail(); return; }
+  const a = new Audio();
+  a.preload = 'auto';
+  a.src = list[0];
+  a.addEventListener('canplaythrough', ()=> onSuccess(list[0]), { once:true });
+  a.addEventListener('error', ()=> tryLoadFirstAudio(list.slice(1), onSuccess, onFail), { once:true });
+  // kick the browser into loading metadata
+  a.load();
+}
+function loadDefaultAudioIfAvailable(){
+  tryLoadFirstAudio(possibleAudioFiles, (url)=>{
+    bgAudio.src = url;
+    bgAudio.preload = 'auto';
+    bgAudio.volume = 0.16;
+    // do not autoplay — wait for user toggle; but indicate that a file is available by leaving bgAudio.src
+    console.log('Loaded background audio:', url);
+  }, ()=>{
+    console.log('No background audio file found — will use fallback arpeggio when user toggles music.');
+  });
+}
+
+/* Background music control (uses bgAudio if src available, otherwise uses programmatic fallback) */
+let fallbackOsc = null;
+let fallbackGain = null;
+let fallbackInterval = null;
+const fallbackPattern = [440,660,880,660]; // simple arpeggio
+let fallbackStep = 0;
+
+function enableAudioOnGesture(){
+  if(audioEnabled) return;
+  audioEnabled = true;
+  if(!audioCtx) audioCtx = new AudioContext();
+  if(audioCtx.state === 'suspended') audioCtx.resume();
+  document.removeEventListener('pointerdown', enableAudioOnGesture);
+}
+document.addEventListener('pointerdown', enableAudioOnGesture, { once:true });
+
+function startFallbackMusic(){
+  ensureAudio();
+  if(!audioCtx) return;
+  fallbackOsc = audioCtx.createOscillator();
+  fallbackGain = audioCtx.createGain();
+  fallbackOsc.type = 'sine';
+  fallbackOsc.frequency.value = fallbackPattern[0];
+  fallbackGain.gain.value = 0.0001;
+  fallbackOsc.connect(fallbackGain); fallbackGain.connect(audioCtx.destination);
+  fallbackOsc.start();
+  const now = audioCtx.currentTime;
+  fallbackGain.gain.linearRampToValueAtTime(0.02, now + 0.2);
+  fallbackStep = 0;
+  fallbackInterval = setInterval(()=>{
+    fallbackStep = (fallbackStep + 1) % fallbackPattern.length;
+    const freq = fallbackPattern[fallbackStep];
+    fallbackOsc.frequency.exponentialRampToValueAtTime(Math.max(40, freq), audioCtx.currentTime + 0.12);
+  }, 350);
+}
+function stopFallbackMusic(){
+  if(fallbackInterval){ clearInterval(fallbackInterval); fallbackInterval = null; }
+  if(fallbackGain && audioCtx){
+    const now = audioCtx.currentTime;
+    try{ fallbackGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3); }catch(e){}
+    setTimeout(()=>{ try{ fallbackOsc && fallbackOsc.stop(); }catch(e){} fallbackOsc=null; fallbackGain=null; }, 400);
+  }
+}
+
+function startMusic(){
+  enableAudioOnGesture();
+  if(bgAudio.src){
+    bgAudio.play().catch(()=>{ /* blocked until gesture — user can click Music again */ });
+  } else {
+    startFallbackMusic();
+  }
+  musicOn = true;
+  musicToggle.textContent = '🎵 Music';
+  musicToggle.classList.remove('ghost'); musicToggle.classList.add('btn');
+}
+function stopMusic(){
+  if(bgAudio && bgAudio.src){
+    try{ bgAudio.pause(); bgAudio.currentTime = 0; }catch(e){}
+  }
+  stopFallbackMusic();
+  musicOn = false;
+  musicToggle.textContent = '🎵 Music';
+  musicToggle.classList.remove('btn'); musicToggle.classList.add('ghost');
+}
+musicToggle.addEventListener('click', ()=>{
+  enableAudioOnGesture();
+  if(musicOn) stopMusic(); else startMusic();
+});
+
+/* ---------------------------
+  Logo loader (tries common filenames in same folder)
+  Put logo.png, logo.jpg, logo.webp, or logo.svg in same folder.
+----------------------------*/
+const possibleLogoFiles = ['logo.png','logo.jpg','logo.webp','logo.svg'];
+function tryLoadFirstImage(list){
+  if(!list.length) return;
+  const img = new Image();
+  img.onload = function(){
+    logoImg.src = list[0];
+    logoImg.style.display = 'block';
+    logoFallback.style.display = 'none';
+  };
+  img.onerror = function(){
+    tryLoadFirstImage(list.slice(1));
+  };
+  img.src = list[0];
+}
+function loadDefaultLogoIfAvailable(){ tryLoadFirstImage(possibleLogoFiles); }
+
+/* ---------------------------
+  Confetti (canvas)
+----------------------------*/
+let confettiCtx = confettiCanvas.getContext('2d');
+let confettiRaf = null;
+let confettiParticles = [];
+function resizeConfetti(){
+  const r = boardEl.getBoundingClientRect();
+  confettiCanvas.width = Math.floor(r.width);
+  confettiCanvas.height = Math.floor(r.height);
+  confettiCanvas.style.width = r.width + 'px';
+  confettiCanvas.style.height = r.height + 'px';
+  confettiCanvas.style.left = '0px';
+  confettiCanvas.style.top = '0px';
+}
+window.addEventListener('resize', resizeConfetti);
+function triggerConfetti(){
+  confettiParticles = [];
+  const W = confettiCanvas.width, H = confettiCanvas.height;
+  const count = Math.min(80, Math.floor(W * 0.22));
+  for(let i=0;i<count;i++){
+    confettiParticles.push({
+      x: W/2 + (Math.random()-0.5)*120,
+      y: H/2 + (Math.random()-0.5)*20,
+      vx: (Math.random()-0.5)*6 + (Math.random()>0.5?3:-3),
+      vy: - (Math.random()*6 + 2),
+      size: Math.random()*8 + 6,
+      rot: Math.random()*360,
+      vr: (Math.random()-0.5)*10,
+      color: ['#ff6b6b','#ffcc66','#7c5cff','#00d4a6','#ffd3f6'][Math.floor(Math.random()*5)],
+      life: 160 + Math.random()*60
+    });
+  }
+  if(!confettiRaf) runConfetti();
+  setTimeout(()=>{ confettiParticles = []; }, 1600);
+}
+function runConfetti(){
+  let last = performance.now();
+  function frame(t){
+    const dt = Math.min(40, t - last) / 16; last = t;
+    confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height);
+    for(let i=confettiParticles.length-1;i>=0;i--){
+      const p = confettiParticles[i];
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      p.vy += 0.22 * dt;
+      p.rot += p.vr * dt;
+      p.life -= dt*2;
+      confettiCtx.save();
+      confettiCtx.translate(p.x, p.y);
+      confettiCtx.rotate(p.rot * Math.PI/180);
+      confettiCtx.fillStyle = p.color;
+      confettiCtx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      confettiCtx.restore();
+      if(p.y > confettiCanvas.height + 60 || p.life < 0) confettiParticles.splice(i,1);
+    }
+    if(confettiParticles.length > 0) confettiRaf = requestAnimationFrame(frame);
+    else { confettiCtx.clearRect(0,0,confettiCanvas.width,confettiCanvas.height); cancelAnimationFrame(confettiRaf); confettiRaf=null; }
+  }
+  confettiRaf = requestAnimationFrame(frame);
+}
+
+/* ---------------------------
+  Init
+----------------------------*/
+createBoard();
+updateTurnIndicator();
+strikeEl.style.opacity = 0; strikeEl.style.width = '0px'; strikeEl.style.transform = 'scaleX(0.02)';
+(function syncCanvas(){ resizeConfetti(); requestAnimationFrame(syncCanvas); })();
+loadDefaultLogoIfAvailable();
+loadDefaultAudioIfAvailable();
+
+/* expose for debug */
+window.__ttt = { restartRound, resetAll, boardRef: ()=>board };
+</script>
+</body>
+</html>
